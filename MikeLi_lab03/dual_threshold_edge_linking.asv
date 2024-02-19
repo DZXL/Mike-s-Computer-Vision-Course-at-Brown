@@ -1,0 +1,68 @@
+function [Ih, Il] = dual_threshold_edge_linking(image, Tl, Th)
+    % Apply the intensity-based edge detector from Problem 2
+    edge_img = intensity_edge_detector(image, Tl);
+    imshow()
+    % After non-maximal suppression, you already have the edge map
+    
+    % Create two images by thresholding:
+    Ih = edge_img;
+    Ih(Ih < Th) = 0; % Threshold high
+    
+    Il = edge_img;
+    Il(Il < Tl) = 0; % Threshold low
+    
+    % Edge Linking: Follow edges in Ih
+    [dy, dx] = gradient(double(image)); % Compute gradients
+    [rows, cols] = size(image)
+    
+    for r = 1:rows
+        for c = 1:cols
+
+            if Ih(r, c) == 1 % Start with an edge point in Ih
+                orientation = atan2(dy(r, c), dx(r, c)) * 180 / pi;
+                % Round orientation to the closest of the 8 directions
+                direction = round(orientation / 45) * 45; % 45 degrees interval
+                
+                while true
+                    switch direction
+                        case {0, 180} % Right or left
+                            nr = r;
+                            nc = c + 1;
+                        case 45 % Bottom right
+                            nr = r + 1;
+                            nc = c + 1;
+                        case 90 % Bottom
+                            nr = r + 1;
+                            nc = c;
+                        case 135 % Bottom left
+                            nr = r + 1;
+                            nc = c - 1;
+                        case -135 % Top left
+                            nr = r - 1;
+                            nc = c - 1;
+                        case -90 % Top
+                            nr = r - 1;
+                            nc = c;
+                        case -45 % Top right
+                            nr = r - 1;
+                            nc = c + 1;
+                        otherwise
+                            break; % Invalid direction
+                    end
+                    
+                    if nr > 0 && nr <= rows && nc > 0 && nc <= cols
+                        if Il(nr, nc) == 1 % Check if the pixel is in Il
+                            Ih(nr, nc) = 1; % Add it to Ih
+                            r = nr;
+                            c = nc;
+                        else
+                            break; % Stop if it's not in Il
+                        end
+                    else
+                        break; % Stop if out of bounds
+                    end
+                end
+            end
+        end
+    end
+end
